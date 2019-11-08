@@ -27,6 +27,29 @@ const connection = mysql.createConnection({
 // name varchar(255) not null,
 // age int not null
 // )`;
+
+// const sql = `CREATE TABLE if not exists teachers(
+//   id INT(11) NOT NULL AUTO_INCREMENT,
+//   name VARCHAR(25) NOT NULL,
+//   zarplata INT(11),
+//   premia INT(11),
+//   PRIMARY KEY (id)
+// )`;
+
+// const sql = `CREATE TABLE if not exists Shippers(
+//   ShipperID INT(11) NOT NULL AUTO_INCREMENT,
+//   ShipperName VARCHAR(51) NOT NULL,
+//   Phone INT(11),
+//   PRIMARY KEY (ShipperID)
+// )`;
+
+// const sql = `CREATE TABLE if not exists Orders(
+//   OrderID INT(11) NOT NULL AUTO_INCREMENT,
+//   OrderDate DATE NOT NULL,
+//   ShipperID INT(11),
+//   PRIMARY KEY (OrderID)
+// )`;
+
 // connection.query(sql, function(err, results) {
 //     if(err) console.log(err);
 //     else console.log("Таблица создана");
@@ -36,10 +59,14 @@ app.set("view engine", "hbs");
 
 
 // ВЫБОРКА
-// connection.query('SELECT * FROM people', function(error, result, fields){
-//     console.log(error);
+// connection.query(`
+// SELECT Orders.OrderID, Shippers.ShipperName, Shippers.Phone, Orders.OrderDate 
+// FROM Orders 
+// INNER JOIN Shippers ON Orders.ShipperID=Shippers.ShipperID`, 
+//   function(error, result, fields){
+//     // console.log(error);
 //     console.log(result); // собственно данные
-//     console.log(fields); // мета-данные полей 
+//     // console.log(fields); // мета-данные полей 
 // });
 
 
@@ -55,6 +82,7 @@ app.set("view engine", "hbs");
 app.get("/", function(req, res){
     connection.query("SELECT * FROM users", function(err, data) {
       if(err) return console.log(err);
+      console.log(data);
       res.render("index.hbs", {
           users: data
       });
