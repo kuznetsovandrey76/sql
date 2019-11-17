@@ -5,12 +5,31 @@ const bodyParser = require("body-parser");
 const app = express();
 const urlencodedParser = bodyParser.urlencoded({extended: false});
 
-const connection = mysql.createConnection({
-  host     : 'akuznetsov.beget.tech',
-  user     : 'akuznetsov_sql',
-  database : 'akuznetsov_sql',
-  password : '***' // ИЗМЕНИТЬ
+function reconnect_db(){
+  let db = mysql.createPool({
+    connectionLimit : 10,
+    host     : 'akuznetsov.beget.tech',
+    user     : 'akuznetsov_sql',
+    database : 'akuznetsov_sql',
+    password : '***' // ИЗМЕНИТЬ
+  });
+  db.on('error', function(err){
+      console.log(err.code);
+  if(err.code == 'PROTOCOL_CONNECTION_LOST') db = reconnect_db();
+  else throw err;
 });
+return db;
+}
+
+let db = reconnect_db();
+
+
+// const connection = mysql.createConnection({
+//   host     : 'akuznetsov.beget.tech',
+//   user     : 'akuznetsov_sql',
+//   database : 'akuznetsov_sql',
+//   password : '***' // ИЗМЕНИТЬ
+// });
 
 // ПОДКЛЮЧЕНИЕ
 // connection.connect(function(err) {
@@ -22,6 +41,31 @@ const connection = mysql.createConnection({
 // });
 
 // СОЗДАЕМ ТАБЛИЦУ
+// const sql1 = `
+//   create table if not exists Users(
+//   login int auto_increment,
+//   name varchar(100) not null,
+//   surname varchar(100) not null,
+//   patronymic varchar(100) null, 
+//   primary key (login)
+//   )`;
+
+// const sql2 = `
+//   create table if not exists Subjects(
+//   subjectId int auto_increment,
+//   name varchar(100) not null,
+//   primary key (subjectId)  
+// )`;
+
+// const sql3 = `
+//   create table if not exists User_subject(
+//   id int primary key auto_increment,
+//   login int not null,
+//   subject int not null,
+//   foreign key (subject) references Subjects (subjectId)
+//   )`;
+
+
 // const sql = `create table if not exists users(
 // id int primary key auto_increment,
 // name varchar(255) not null,
@@ -50,7 +94,7 @@ const connection = mysql.createConnection({
 //   PRIMARY KEY (OrderID)
 // )`;
 
-// connection.query(sql, function(err, results) {
+// connection.query(sql3, function(err, results) {
 //     if(err) console.log(err);
 //     else console.log("Таблица создана");
 // });
@@ -59,10 +103,13 @@ app.set("view engine", "hbs");
 
 
 // ВЫБОРКА
-// connection.query(`
-// SELECT Orders.OrderID, Shippers.ShipperName, Shippers.Phone, Orders.OrderDate 
-// FROM Orders 
-// INNER JOIN Shippers ON Orders.ShipperID=Shippers.ShipperID`, 
+// db.query(`
+// select u.name as first_name, u.surname as last_name, s.name as title from Users u 
+// join User_subject us 
+// on u.login = us.login 
+// join Subjects s 
+// on s.id = us.subject
+// `, 
 //   function(error, result, fields){
 //     // console.log(error);
 //     console.log(result); // собственно данные
@@ -80,13 +127,20 @@ app.set("view engine", "hbs");
 
 // получение списка пользователей
 app.get("/", function(req, res){
-    connection.query("SELECT * FROM users", function(err, data) {
-      if(err) return console.log(err);
-      console.log(data);
-      res.render("index.hbs", {
-          users: data
+    db.query(`
+    select u.name as first_name, u.surname as last_name, s.name as title from Users u 
+    join User_subject us 
+    on u.login = us.login 
+    join Subjects s 
+    on s.id = us.subject
+    `, function(err, data) {
+        if(err) return console.log(err);
+        console.log(`id: ${Math.floor(Math.random()*100)} `);
+        // console.log(data);
+        res.render("index.hbs", {
+            users: data
+        });
       });
-    });
 });
 // возвращаем форму для добавления данных
 app.get("/create", function(req, res){
